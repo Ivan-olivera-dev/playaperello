@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  dashboard:
+    build: .
+    container_name: perello-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:3000"
+    volumes:
+      - ./data:/app/data
