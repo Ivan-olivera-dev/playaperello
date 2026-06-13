@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function getCurrentPeriodLimits() {
   // Configurar hora de Madrid para que los cortes de hora sean precisos
@@ -29,18 +30,25 @@ export async function GET(request) {
     const period = getCurrentPeriodLimits();
     
     if (!period) {
-      return NextResponse.json({ votes: [] });
+      return NextResponse.json({ votes: [] }, {
+        headers: { 'Cache-Control': 'no-store, max-age=0' }
+      });
     }
 
-    const startUTC = period.start.toISOString();
-    const endUTC = period.end.toISOString();
+    // Convertir el Date a formato de SQLite UTC: "YYYY-MM-DD HH:MM:SS"
+    const formatSQLiteDate = (d) => d.toISOString().replace('T', ' ').substring(0, 19);
+    
+    const startUTC = formatSQLiteDate(period.start);
+    const endUTC = formatSQLiteDate(period.end);
     
     const votes = await db.all(
       'SELECT color, COUNT(*) as count FROM votes WHERE timestamp >= ? AND timestamp < ? GROUP BY color',
       [startUTC, endUTC]
     );
     
-    return NextResponse.json({ votes });
+    return NextResponse.json({ votes }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' }
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
