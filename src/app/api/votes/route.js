@@ -1,13 +1,44 @@
 import { NextResponse } from 'next/server';
 import { initDb } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+function getCurrentPeriodLimits() {
+  // Configurar hora de Madrid para que los cortes de hora sean precisos
+  const nowStr = new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"});
+  const now = new Date(nowStr);
+  const hour = now.getHours();
+  
+  const createDate = (h) => {
+    const d = new Date(now);
+    d.setHours(h, 0, 0, 0);
+    return d;
+  };
+
+  if (hour >= 7 && hour < 15) {
+    return { start: createDate(7), end: createDate(15) };
+  } else if (hour >= 16 && hour < 21) {
+    return { start: createDate(16), end: createDate(21) };
+  }
+  return null;
+}
+
 export async function GET(request) {
   try {
     const db = await initDb();
-    const today = new Date().toISOString().split('T')[0];
+    const period = getCurrentPeriodLimits();
     
-    // Obtenemos los votos agrupados por color para el día de hoy
-    const votes = await db.all('SELECT color, COUNT(*) as count FROM votes WHERE date = ? GROUP BY color', [today]);
+    if (!period) {
+      return NextResponse.json({ votes: [] });
+    }
+
+    const startUTC = period.start.toISOString();
+    const endUTC = period.end.toISOString();
+    
+    const votes = await db.all(
+      'SELECT color, COUNT(*) as count FROM votes WHERE timestamp >= ? AND timestamp < ? GROUP BY color',
+      [startUTC, endUTC]
+    );
     
     return NextResponse.json({ votes });
   } catch (error) {
@@ -24,10 +55,14 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Color inválido' }, { status: 400 });
     }
 
+    const period = getCurrentPeriodLimits();
+    if (!period) {
+      return NextResponse.json({ error: 'Fuera de horario' }, { status: 403 });
+    }
+
     const db = await initDb();
     const today = new Date().toISOString().split('T')[0];
     
-    // Registramos el voto
     await db.run('INSERT INTO votes (color, date) VALUES (?, ?)', [color, today]);
     
     return NextResponse.json({ success: true });
