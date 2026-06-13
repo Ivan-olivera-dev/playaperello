@@ -40,7 +40,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-USER nextjs
+# Corremos como root para evitar problemas de permisos al escribir en el volumen de SQLite /app/data desde el host
+# USER nextjs
 
 EXPOSE 3000
 

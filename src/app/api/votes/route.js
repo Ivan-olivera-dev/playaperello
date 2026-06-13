@@ -4,30 +4,25 @@ import { initDb } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function getCurrentPeriodLimits() {
-  // Configurar hora de Madrid para que los cortes de hora sean precisos
+function getCurrentPeriod() {
   const nowStr = new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"});
   const now = new Date(nowStr);
   const hour = now.getHours();
-  
-  const createDate = (h) => {
-    const d = new Date(now);
-    d.setHours(h, 0, 0, 0);
-    return d;
-  };
 
-  if (hour >= 7 && hour < 15) {
-    return { start: createDate(7), end: createDate(15) };
-  } else if (hour >= 16 && hour < 21) {
-    return { start: createDate(16), end: createDate(21) };
-  }
+  if (hour >= 7 && hour < 15) return 'morning';
+  if (hour >= 16 && hour < 21) return 'afternoon';
   return null;
+}
+
+function getTodayString() {
+  const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' });
+  return formatter.format(new Date()); 
 }
 
 export async function GET(request) {
   try {
     const db = await initDb();
-    const period = getCurrentPeriodLimits();
+    const period = getCurrentPeriod();
     
     if (!period) {
       return NextResponse.json({ votes: [] }, {
@@ -35,21 +30,19 @@ export async function GET(request) {
       });
     }
 
-    // Convertir el Date a formato de SQLite UTC: "YYYY-MM-DD HH:MM:SS"
-    const formatSQLiteDate = (d) => d.toISOString().replace('T', ' ').substring(0, 19);
-    
-    const startUTC = formatSQLiteDate(period.start);
-    const endUTC = formatSQLiteDate(period.end);
+    // Simplificamos al máximo: guardamos "FECHA_PERIODO" como un texto plano para evitar bugs de zonas horarias.
+    const periodDateKey = `${getTodayString()}_${period}`;
     
     const votes = await db.all(
-      'SELECT color, COUNT(*) as count FROM votes WHERE timestamp >= ? AND timestamp < ? GROUP BY color',
-      [startUTC, endUTC]
+      'SELECT color, COUNT(*) as count FROM votes WHERE date = ? GROUP BY color',
+      [periodDateKey]
     );
     
     return NextResponse.json({ votes }, {
       headers: { 'Cache-Control': 'no-store, max-age=0' }
     });
   } catch (error) {
+    console.error("API GET Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -63,18 +56,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Color inválido' }, { status: 400 });
     }
 
-    const period = getCurrentPeriodLimits();
+    const period = getCurrentPeriod();
     if (!period) {
       return NextResponse.json({ error: 'Fuera de horario' }, { status: 403 });
     }
 
     const db = await initDb();
-    const today = new Date().toISOString().split('T')[0];
+    const periodDateKey = `${getTodayString()}_${period}`;
     
-    await db.run('INSERT INTO votes (color, date) VALUES (?, ?)', [color, today]);
+    // Guardamos el texto plano "2026-06-13_afternoon" en la columna date.
+    await db.run('INSERT INTO votes (color, date) VALUES (?, ?)', [color, periodDateKey]);
     
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("API POST Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
