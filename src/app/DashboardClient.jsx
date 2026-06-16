@@ -2,20 +2,61 @@
 import { useState, useEffect } from 'react';
 
 export default function DashboardClient({ weatherData }) {
-  const { waveHeight, windSpeed, temperature } = weatherData;
+  const { 
+    waveHeight, waveDirection, wavePeriod, 
+    windSpeed, windDirection, windGusts, 
+    temperature 
+  } = weatherData;
   const [hasVoted, setHasVoted] = useState(false);
   const [votes, setVotes] = useState({ green: 0, yellow: 0, red: 0 });
   const [loadingVotes, setLoadingVotes] = useState(true);
   const [isDark, setIsDark] = useState(false);
   const [periodKey, setPeriodKey] = useState(null);
 
-  // Algoritmo predictivo de bandera
+  const getDirectionText = (degrees) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round(degrees / 45) % 8];
+  };
+
+  // --- Algoritmo de Predicción Avanzada (El Perelló) ---
   let predictedFlag = 'green';
   let flagText = 'Verde';
-  if (waveHeight >= 1.2 || windSpeed > 30) {
+  
+  // 1. Evaluar Viento
+  const isPoniente = windDirection >= 225 && windDirection <= 315;
+  const isLevante = windDirection >= 45 && windDirection <= 135;
+
+  let riskLevel = 0; // 0: Verde, 1: Amarilla, 2: Roja
+
+  // Reglas de Viento
+  if (isPoniente && (windSpeed > 20 || windGusts > 35)) {
+    // Viento de tierra a mar: peligro de arrastre
+    riskLevel = Math.max(riskLevel, 1);
+    if (windGusts > 50) riskLevel = Math.max(riskLevel, 2);
+  } else if (isLevante && windSpeed > 25) {
+    // Levante: mar picado rápidamente
+    riskLevel = Math.max(riskLevel, 2);
+  } else if (windSpeed > 30 || windGusts > 40) {
+    // Viento fuerte general
+    riskLevel = Math.max(riskLevel, 1);
+  }
+
+  // Reglas de Oleaje
+  if (waveHeight >= 1.2) {
+    riskLevel = Math.max(riskLevel, 2);
+  } else if (waveHeight >= 0.5) {
+    riskLevel = Math.max(riskLevel, 1);
+    // Si hay mar de fondo (periodo largo), la resaca es peligrosa
+    if (wavePeriod > 8) {
+      riskLevel = Math.max(riskLevel, 2);
+    }
+  }
+
+  // Asignar bandera final
+  if (riskLevel === 2) {
     predictedFlag = 'red';
     flagText = 'Roja';
-  } else if (waveHeight >= 0.5 || windSpeed > 15) {
+  } else if (riskLevel === 1) {
     predictedFlag = 'yellow';
     flagText = 'Amarilla';
   }
@@ -145,8 +186,16 @@ export default function DashboardClient({ weatherData }) {
           <span className="metric-value">{waveHeight.toFixed(1)} m</span>
         </div>
         <div className="metric-row">
+          <span className="metric-label">Periodo y Dirección (Olas)</span>
+          <span className="metric-value">{wavePeriod.toFixed(1)}s ({getDirectionText(waveDirection)})</span>
+        </div>
+        <div className="metric-row">
           <span className="metric-label">Viento</span>
-          <span className="metric-value">{windSpeed.toFixed(0)} km/h</span>
+          <span className="metric-value">{windSpeed.toFixed(0)} km/h ({getDirectionText(windDirection)})</span>
+        </div>
+        <div className="metric-row">
+          <span className="metric-label">Rachas máximas</span>
+          <span className="metric-value">{windGusts.toFixed(0)} km/h</span>
         </div>
         <div className="metric-row">
           <span className="metric-label">Temperatura exterior</span>
