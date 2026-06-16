@@ -186,7 +186,7 @@ export default function DashboardClient({ weatherData }) {
           <span className="metric-value">{waveHeight.toFixed(1)} m</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Periodo y Dirección (Olas)</span>
+          <span className="metric-label">Periodo y dirección</span>
           <span className="metric-value">{wavePeriod.toFixed(1)}s ({getDirectionText(waveDirection)})</span>
         </div>
         <div className="metric-row">
