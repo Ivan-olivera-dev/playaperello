@@ -5,7 +5,7 @@ export default function DashboardClient({ weatherData }) {
   const { 
     waveHeight, waveDirection, wavePeriod, 
     windSpeed, windDirection, windGusts, 
-    temperature 
+    temperature, uvIndex 
   } = weatherData;
   const [hasVoted, setHasVoted] = useState(false);
   const [votes, setVotes] = useState({ green: 0, yellow: 0, red: 0 });
@@ -16,6 +16,22 @@ export default function DashboardClient({ weatherData }) {
   const getDirectionText = (degrees) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
     return directions[Math.round(degrees / 45) % 8];
+  };
+
+  const getUvText = (uv) => {
+    if (uv < 3) return 'Bajo';
+    if (uv < 6) return 'Moderado';
+    if (uv < 8) return 'Alto';
+    if (uv < 11) return 'Muy Alto';
+    return 'Extremo';
+  };
+
+  const getUvColor = (uv) => {
+    if (uv < 3) return 'var(--success)';
+    if (uv < 6) return 'var(--warning)';
+    if (uv < 8) return '#f97316';
+    if (uv < 11) return 'var(--danger)';
+    return '#9333ea';
   };
 
   // --- Algoritmo de Predicción Avanzada (El Perelló) ---
@@ -200,6 +216,12 @@ export default function DashboardClient({ weatherData }) {
         <div className="metric-row">
           <span className="metric-label">Temperatura exterior</span>
           <span className="metric-value">{temperature.toFixed(1)} °C</span>
+        </div>
+        <div className="metric-row">
+          <span className="metric-label">Fuerza del sol (UV)</span>
+          <span className="metric-value" style={{ color: getUvColor(uvIndex) }}>
+            {getUvText(uvIndex)} ({uvIndex.toFixed(1)})
+          </span>
         </div>
       </div>
 

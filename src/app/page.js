@@ -10,7 +10,7 @@ async function getWeatherData() {
   try {
     // Open-Meteo Marine API y Weather API
     const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_direction,wave_period&timezone=Europe%2FMadrid`;
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FMadrid`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index&timezone=Europe%2FMadrid`;
     
     const [marineRes, weatherRes] = await Promise.all([
       fetch(marineUrl),
@@ -27,13 +27,14 @@ async function getWeatherData() {
       windSpeed: weatherData?.current?.wind_speed_10m || 0,
       windDirection: weatherData?.current?.wind_direction_10m || 0,
       windGusts: weatherData?.current?.wind_gusts_10m || 0,
-      temperature: weatherData?.current?.temperature_2m || 0
+      temperature: weatherData?.current?.temperature_2m || 0,
+      uvIndex: weatherData?.current?.uv_index || 0
     };
   } catch (error) {
     console.error("Error fetching weather data:", error);
     return { 
       waveHeight: 0, waveDirection: 0, wavePeriod: 0, 
-      windSpeed: 0, windDirection: 0, windGusts: 0, temperature: 0 
+      windSpeed: 0, windDirection: 0, windGusts: 0, temperature: 0, uvIndex: 0 
     };
   }
 }
