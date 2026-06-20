@@ -1,6 +1,53 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+const DICT = {
+  es: {
+    subtitle: "Estado del mar",
+    predictedFlag: "Bandera estimada",
+    flagGreen: "Verde",
+    flagYellow: "Amarilla",
+    flagRed: "Roja",
+    waveHeight: "Altura de olas",
+    wavePeriod: "Periodo y dirección",
+    wind: "Viento",
+    windGusts: "Rachas máximas",
+    temp: "Temperatura exterior",
+    uv: "Fuerza del sol (UV)",
+    uvLow: "Bajo",
+    uvMod: "Moderado",
+    uvHigh: "Alto",
+    uvVHigh: "Muy Alto",
+    uvExt: "Extremo",
+    social: "Corroboración en la playa",
+    closed: "Votación cerrada ahora mismo.",
+    schedule: "(Horarios: 07:00 a 15:00 y 16:00 a 21:00)",
+    directions: ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
+  },
+  va: {
+    subtitle: "Estat de la mar",
+    predictedFlag: "Bandera estimada",
+    flagGreen: "Verda",
+    flagYellow: "Groga",
+    flagRed: "Roja",
+    waveHeight: "Altura de les ones",
+    wavePeriod: "Període i direcció",
+    wind: "Vent",
+    windGusts: "Ràfegues màximes",
+    temp: "Temperatura exterior",
+    uv: "Força del sol (UV)",
+    uvLow: "Baix",
+    uvMod: "Moderat",
+    uvHigh: "Alt",
+    uvVHigh: "Molt Alt",
+    uvExt: "Extrem",
+    social: "Corroboració a la platja",
+    closed: "Votació tancada ara mateix.",
+    schedule: "(Horaris: 07:00 a 15:00 i 16:00 a 21:00)",
+    directions: ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
+  }
+};
+
 export default function DashboardClient({ weatherData }) {
   const { 
     waveHeight, waveDirection, wavePeriod, 
@@ -11,19 +58,21 @@ export default function DashboardClient({ weatherData }) {
   const [votes, setVotes] = useState({ green: 0, yellow: 0, red: 0 });
   const [loadingVotes, setLoadingVotes] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [lang, setLang] = useState('es');
   const [periodKey, setPeriodKey] = useState(null);
 
+  const t = DICT[lang];
+
   const getDirectionText = (degrees) => {
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    return directions[Math.round(degrees / 45) % 8];
+    return t.directions[Math.round(degrees / 45) % 8];
   };
 
   const getUvText = (uv) => {
-    if (uv < 3) return 'Bajo';
-    if (uv < 6) return 'Moderado';
-    if (uv < 8) return 'Alto';
-    if (uv < 11) return 'Muy Alto';
-    return 'Extremo';
+    if (uv < 3) return t.uvLow;
+    if (uv < 6) return t.uvMod;
+    if (uv < 8) return t.uvHigh;
+    if (uv < 11) return t.uvVHigh;
+    return t.uvExt;
   };
 
   const getUvColor = (uv) => {
@@ -36,7 +85,7 @@ export default function DashboardClient({ weatherData }) {
 
   // --- Algoritmo de Predicción Avanzada (El Perelló) ---
   let predictedFlag = 'green';
-  let flagText = 'Verde';
+  let flagText = t.flagGreen;
   
   // 1. Evaluar Viento
   const isPoniente = windDirection >= 225 && windDirection <= 315;
@@ -71,10 +120,10 @@ export default function DashboardClient({ weatherData }) {
   // Asignar bandera final
   if (riskLevel === 2) {
     predictedFlag = 'red';
-    flagText = 'Roja';
+    flagText = t.flagRed;
   } else if (riskLevel === 1) {
     predictedFlag = 'yellow';
-    flagText = 'Amarilla';
+    flagText = t.flagYellow;
   }
 
   const getPeriodKey = () => {
@@ -94,6 +143,12 @@ export default function DashboardClient({ weatherData }) {
     } else if (savedTheme === 'light') {
       setIsDark(false);
       document.documentElement.setAttribute('data-theme', 'light');
+    }
+
+    // Configurar idioma inicial
+    const savedLang = localStorage.getItem('lang');
+    if (savedLang === 'va' || savedLang === 'es') {
+      setLang(savedLang);
     }
 
     const currentPeriod = getPeriodKey();
@@ -118,6 +173,12 @@ export default function DashboardClient({ weatherData }) {
     setIsDark(!isDark);
     localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
+  const toggleLang = () => {
+    const newLang = lang === 'es' ? 'va' : 'es';
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
   };
 
   const fetchVotes = async () => {
@@ -159,37 +220,38 @@ export default function DashboardClient({ weatherData }) {
 
   return (
     <div className="dashboard-container">
-      <button 
-        className="theme-toggle" 
-        onClick={toggleTheme}
-        title="Cambiar tema"
-      >
-        {isDark ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        )}
-      </button>
+      <div className="top-controls">
+        <button className="control-btn" onClick={toggleLang} title="Cambiar idioma">
+          <span className="lang-text">{lang === 'es' ? 'VA' : 'ES'}</span>
+        </button>
+        <button className="control-btn" onClick={toggleTheme} title="Cambiar tema">
+          {isDark ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          )}
+        </button>
+      </div>
 
       <div className="header">
         <h1>El Perelló</h1>
-        <p>Estado del mar</p>
+        <p>{t.subtitle}</p>
       </div>
 
       <div className="flag-prediction">
-        <h2>Bandera estimada</h2>
+        <h2>{t.predictedFlag}</h2>
         <div className="flag-indicator">
           <span className="flag-text">{flagText}</span>
           <div className={`flag-color flag-${predictedFlag}`}></div>
@@ -198,27 +260,27 @@ export default function DashboardClient({ weatherData }) {
 
       <div className="metrics-list">
         <div className="metric-row">
-          <span className="metric-label">Altura de olas</span>
+          <span className="metric-label">{t.waveHeight}</span>
           <span className="metric-value">{waveHeight.toFixed(1)} m</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Periodo y dirección</span>
+          <span className="metric-label">{t.wavePeriod}</span>
           <span className="metric-value">{wavePeriod.toFixed(1)}s ({getDirectionText(waveDirection)})</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Viento</span>
+          <span className="metric-label">{t.wind}</span>
           <span className="metric-value">{windSpeed.toFixed(0)} km/h ({getDirectionText(windDirection)})</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Rachas máximas</span>
+          <span className="metric-label">{t.windGusts}</span>
           <span className="metric-value">{windGusts.toFixed(0)} km/h</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Temperatura exterior</span>
+          <span className="metric-label">{t.temp}</span>
           <span className="metric-value">{temperature.toFixed(1)} °C</span>
         </div>
         <div className="metric-row">
-          <span className="metric-label">Fuerza del sol (UV)</span>
+          <span className="metric-label">{t.uv}</span>
           <span className="metric-value" style={{ color: getUvColor(uvIndex) }}>
             {getUvText(uvIndex)} ({uvIndex.toFixed(1)})
           </span>
@@ -226,17 +288,17 @@ export default function DashboardClient({ weatherData }) {
       </div>
 
       <div className="social-votes">
-        <h3>Corroboración en la playa</h3>
+        <h3>{t.social}</h3>
         
         {isVotingClosed ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '20px' }}>
-            Votación cerrada ahora mismo.<br/>(Horarios: 07:00 a 15:00 y 16:00 a 21:00)
+            {t.closed}<br/>{t.schedule}
           </p>
         ) : (
           <div className="vote-buttons">
-            <button className="vote-btn green" onClick={() => handleVote('green')} disabled={hasVoted} title="Verde"></button>
-            <button className="vote-btn yellow" onClick={() => handleVote('yellow')} disabled={hasVoted} title="Amarilla"></button>
-            <button className="vote-btn red" onClick={() => handleVote('red')} disabled={hasVoted} title="Roja"></button>
+            <button className="vote-btn green" onClick={() => handleVote('green')} disabled={hasVoted} title={t.flagGreen}></button>
+            <button className="vote-btn yellow" onClick={() => handleVote('yellow')} disabled={hasVoted} title={t.flagYellow}></button>
+            <button className="vote-btn red" onClick={() => handleVote('red')} disabled={hasVoted} title={t.flagRed}></button>
           </div>
         )}
         
