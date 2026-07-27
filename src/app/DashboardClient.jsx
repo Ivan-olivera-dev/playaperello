@@ -93,26 +93,28 @@ export default function DashboardClient({ weatherData }) {
 
   let riskLevel = 0; // 0: Verde, 1: Amarilla, 2: Roja
 
-  // Reglas de Viento
-  if (isPoniente && (windSpeed > 20 || windGusts > 35)) {
-    // Viento de tierra a mar: peligro de arrastre
+  // Reglas de Viento (Ajustadas post-regeneración)
+  if (isPoniente && (windSpeed > 15 || windGusts > 25)) {
+    // Viento de tierra a mar: peligro de arrastre aumentado
     riskLevel = Math.max(riskLevel, 1);
-    if (windGusts > 50) riskLevel = Math.max(riskLevel, 2);
-  } else if (isLevante && windSpeed > 25) {
-    // Levante: mar picado rápidamente
-    riskLevel = Math.max(riskLevel, 2);
-  } else if (windSpeed > 30 || windGusts > 40) {
+    if (windGusts > 40) riskLevel = Math.max(riskLevel, 2);
+  } else if (isLevante && windSpeed > 15) {
+    // Levante: mar picado más rápido tras la regeneración
+    riskLevel = Math.max(riskLevel, 1);
+    if (windSpeed > 20) riskLevel = Math.max(riskLevel, 2);
+  } else if (windSpeed > 20 || windGusts > 30) {
     // Viento fuerte general
     riskLevel = Math.max(riskLevel, 1);
   }
 
-  // Reglas de Oleaje
-  if (waveHeight >= 1.2) {
+  // Reglas de Oleaje (Ajustadas post-regeneración)
+  // El nuevo perfil de la playa provoca que rompa más fuerte en la orilla
+  if (waveHeight >= 0.7) {
     riskLevel = Math.max(riskLevel, 2);
-  } else if (waveHeight >= 0.5) {
+  } else if (waveHeight >= 0.3) {
     riskLevel = Math.max(riskLevel, 1);
-    // Si hay mar de fondo (periodo largo), la resaca es peligrosa
-    if (wavePeriod > 8) {
+    // Mayor peligro de resaca con menor periodo
+    if (wavePeriod > 6) {
       riskLevel = Math.max(riskLevel, 2);
     }
   }
