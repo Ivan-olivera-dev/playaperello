@@ -83,40 +83,37 @@ export default function DashboardClient({ weatherData }) {
     return '#9333ea';
   };
 
-  // --- Algoritmo de Predicción Avanzada (El Perelló) ---
-  let predictedFlag = 'green';
-  let flagText = t.flagGreen;
-  
-  // 1. Evaluar Viento
-  const isPoniente = windDirection >= 225 && windDirection <= 315;
-  const isLevante = windDirection >= 45 && windDirection <= 135;
+  // --- Algoritmo de Predicción (El Perelló, post-regeneración 2026) ---
+  // La playa mira al ESTE. Tras la regeneración, la orilla tiene una caída
+  // brusca: en dos pasos pasas de hacer pie a estar sumergido. Esto hace
+  // que la playa sea peligrosa por defecto.
+  let predictedFlag = 'yellow';
+  let flagText = t.flagYellow;
 
-  let riskLevel = 0; // 0: Verde, 1: Amarilla, 2: Roja
+  // Riesgo base = 1 (AMARILLA) siempre por el escalón de la regeneración
+  let riskLevel = 1;
 
-  // Reglas de Viento (Ajustadas post-regeneración)
-  if (isPoniente && (windSpeed > 15 || windGusts > 25)) {
-    // Viento de tierra a mar: peligro de arrastre aumentado
-    riskLevel = Math.max(riskLevel, 1);
-    if (windGusts > 40) riskLevel = Math.max(riskLevel, 2);
-  } else if (isLevante && windSpeed > 15) {
-    // Levante: mar picado más rápido tras la regeneración
-    riskLevel = Math.max(riskLevel, 1);
-    if (windSpeed > 20) riskLevel = Math.max(riskLevel, 2);
-  } else if (windSpeed > 20 || windGusts > 30) {
-    // Viento fuerte general
-    riskLevel = Math.max(riskLevel, 1);
+  // Componente ESTE (del mar): 45°-135° → empuja oleaje directo a la orilla
+  const isOnshoreWind = windDirection >= 45 && windDirection <= 135;
+
+  // --- Sube a ROJA solo con mar realmente movido ---
+  if (waveHeight >= 0.6) {
+    riskLevel = 2;
   }
 
-  // Reglas de Oleaje (Ajustadas post-regeneración)
-  // El nuevo perfil de la playa provoca que rompa más fuerte en la orilla
-  if (waveHeight >= 0.7) {
-    riskLevel = Math.max(riskLevel, 2);
-  } else if (waveHeight >= 0.3) {
-    riskLevel = Math.max(riskLevel, 1);
-    // Mayor peligro de resaca con menor periodo
-    if (wavePeriod > 6) {
-      riskLevel = Math.max(riskLevel, 2);
-    }
+  // Levante fuerte: mete oleaje directo a la orilla
+  if (isOnshoreWind && (windSpeed > 20 || windGusts > 35)) {
+    riskLevel = 2;
+  }
+
+  // Viento muy fuerte general (cualquier dirección)
+  if (windSpeed > 30 || windGusts > 45) {
+    riskLevel = 2;
+  }
+
+  // --- Solo VERDE si el mar está completamente plano y sin viento ---
+  if (waveHeight < 0.15 && windSpeed < 10 && windGusts < 15) {
+    riskLevel = 0;
   }
 
   // Asignar bandera final
@@ -126,6 +123,9 @@ export default function DashboardClient({ weatherData }) {
   } else if (riskLevel === 1) {
     predictedFlag = 'yellow';
     flagText = t.flagYellow;
+  } else {
+    predictedFlag = 'green';
+    flagText = t.flagGreen;
   }
 
   const getPeriodKey = () => {
