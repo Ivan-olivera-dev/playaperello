@@ -8,27 +8,54 @@ async function getWeatherData() {
   const lon = -0.278;
   
   try {
-    // Open-Meteo Marine API y Weather API
+    // Open-Meteo Marine API (Oleaje)
     const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_direction,wave_period&timezone=Europe%2FMadrid`;
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index&timezone=Europe%2FMadrid`;
     
-    const [marineRes, weatherRes] = await Promise.all([
-      fetch(marineUrl),
-      fetch(weatherUrl)
+    // Inforatge El Perelló (Scraping de estación terrestre y UV)
+    const inforatgeUrl = `https://inforatge.com/meteo-elperello`;
+    
+    const [marineRes, inforatgeRes] = await Promise.all([
+      fetch(marineUrl, { next: { revalidate: 60 } }),
+      fetch(inforatgeUrl, { next: { revalidate: 60 } })
     ]);
     
     const marineData = await marineRes.json();
-    const weatherData = await weatherRes.json();
+    const inforatgeHtml = await inforatgeRes.text();
+    
+    // --- Parsear Inforatge usando Regex ---
+    
+    // Temperatura: <div class="blocValorTM">23<span class="vPetit">,4</span>
+    const tempMatch = inforatgeHtml.match(/<div class="blocValorTM">(\d+)<span class="vPetit">,(\d+)<\/span>/);
+    const temperature = tempMatch ? parseFloat(`${tempMatch[1]}.${tempMatch[2]}`) : 0;
+    
+    // Viento velocidad y dirección: <div class="blocValor">8<span class="vPetit"> NO</span></div>
+    const windMatch = inforatgeHtml.match(/<div class="blocVariableVV">[\s\S]*?<div class="blocValor">(\d+)<span class="vPetit">\s*([A-Z]+)<\/span><\/div>/);
+    const windSpeed = windMatch ? parseFloat(windMatch[1]) : 0;
+    const windDirStr = windMatch ? windMatch[2] : 'N';
+    
+    // Mapeo de dirección a grados
+    const dirMap = {
+      'N': 0, 'NE': 45, 'E': 90, 'SE': 135, 'S': 180, 'SO': 225, 'O': 270, 'NO': 315
+    };
+    const windDirection = dirMap[windDirStr] !== undefined ? dirMap[windDirStr] : 0;
+    
+    // Rachas máximas: <a href="#" class="boxpetitkVX negreT"><span class="varmobil">m&agrave;x</span>10 <span class="tPetit">km/h</span></a>
+    const gustMatch = inforatgeHtml.match(/<a href="#" class="boxpetitkVX negreT"><span class="varmobil">m&agrave;x<\/span>(\d+)\s*<span class="tPetit">km\/h<\/span><\/a>/);
+    const windGusts = gustMatch ? parseFloat(gustMatch[1]) : windSpeed;
+    
+    // UV: hui<span class="varuv8">8</span>
+    const uvMatch = inforatgeHtml.match(/hui<span class="varuv\d+">(\d+)<\/span>/);
+    const uvIndex = uvMatch ? parseFloat(uvMatch[1]) : 0;
     
     return {
       waveHeight: marineData?.current?.wave_height || 0,
       waveDirection: marineData?.current?.wave_direction || 0,
       wavePeriod: marineData?.current?.wave_period || 0,
-      windSpeed: weatherData?.current?.wind_speed_10m || 0,
-      windDirection: weatherData?.current?.wind_direction_10m || 0,
-      windGusts: weatherData?.current?.wind_gusts_10m || 0,
-      temperature: weatherData?.current?.temperature_2m || 0,
-      uvIndex: weatherData?.current?.uv_index || 0
+      windSpeed,
+      windDirection,
+      windGusts,
+      temperature,
+      uvIndex
     };
   } catch (error) {
     console.error("Error fetching weather data:", error);
