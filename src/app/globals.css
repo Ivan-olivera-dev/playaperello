@@ -122,15 +122,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding-bottom: 30px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 30px;
+}
+
+.flag-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .flag-prediction h2 {
   font-size: 1.1rem;
   font-weight: 300;
   color: var(--text-secondary);
+}
+
+.flag-reason {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .flag-indicator {
@@ -255,4 +269,83 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.offseason-card {
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 36px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeUp 0.6s ease-out;
+}
+
+.offseason-badge {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.offseason-title {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+}
+
+.offseason-text {
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.offseason-countdown {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  padding-top: 4px;
+}
+
+.offseason-live-btn {
+  margin-top: 12px;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.offseason-live-btn:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--text-secondary);
+}
+
+.offseason-banner {
+  margin-bottom: 20px;
+}
+
+.offseason-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 300;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.offseason-back-btn:hover {
+  color: var(--text-primary);
 }
