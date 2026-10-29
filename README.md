@@ -1,38 +1,23 @@
-<div align="center">
-  <h1>🌊 Playa del Perelló — Maritime Telemetry & Flag Predictor</h1>
-  <p><strong>Real-time sea state telemetry, physical surf-hazard modeling, and crowdsourced flag corroboration for El Perelló (Valencia, Spain)</strong></p>
-  <p>
-    <a href="https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml"><img src="https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-    <a href="https://playaperello.es"><img src="https://img.shields.io/badge/live-playaperello.es-0ea5e9.svg" alt="Live Site: playaperello.es" /></a>
-    <img src="https://img.shields.io/badge/Next.js-16-black.svg?logo=next.js" alt="Next.js 16" />
-    <img src="https://img.shields.io/badge/SQLite-Persistent-003B57.svg?logo=sqlite&logoColor=white" alt="SQLite" />
-  </p>
-</div>
+# Playa del Perelló
 
----
+[![CI](https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml/badge.svg)](https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml)
+[![Live Site](https://img.shields.io/badge/live-playaperello.es-0ea5e9.svg)](https://playaperello.es)
 
-## 📖 Overview
+Web app that tracks sea conditions and estimates the beach safety flag for El Perelló (Sueca, Valencia). Live at [playaperello.es](https://playaperello.es).
 
-**Playa del Perelló** (<a href="https://playaperello.es">playaperello.es</a>) is a lightweight maritime dashboard built for swimmers and locals in El Perelló (Sueca, Valencia).
+## Why I built it
 
-Following the coastal regeneration works on the beach, the shoreline developed a steep near-shore drop-off (*escalón de orilla*) that amplifies shorebreak hazards even under moderate wave heights. Generic weather apps fail to capture this local bathymetry. This project combines **marine swell telemetry**, **local weather station scraping**, and a **custom physical model** to estimate the beach safety flag (Green, Yellow, or Red) alongside real-time citizen corroboration.
+After the sand regeneration works in El Perelló, the shoreline developed a steep drop-off right at the water's edge. Within two steps you go from ankle-deep water to not touching the bottom, which makes shorebreak waves much rougher than standard weather apps suggest.
 
----
+This app combines marine swell data with readings from the local weather station in El Perelló to estimate which flag (Green, Yellow, or Red) fits current conditions, and lets people at the beach vote to confirm the actual flag on the lifeguard post.
 
-## ✨ Key Engineering Highlights
+## How it works
 
-- 🌐 **Dual-Source Telemetry Pipeline (ISR 60s):** Merges offshore swell metrics (`wave_height`, `wave_period`, `wave_direction`) from the **Open-Meteo Marine API** with real-time coastal wind, gust, temperature, and UV data scraped from the local **Inforatge El Perelló** ground station.
-- 🧮 **Physical Shorebreak & Wind Model (`src/lib/beach-logic.js`):**
-  - Weighs wave incidence against El Perelló's East-facing coastline (~75°–90°).
-  - Applies an energy multiplier for long-period swell (`wavePeriod >= 6.0s–7.5s`) impacting the steep post-regeneration shore step.
-  - Distinguishes between pure onshore winds (*Levante / Gregal*), afternoon thermal sea breezes (*Garbí / Xaloc*), and offshore winds (*Poniente*).
-- ☀️ **Seasonal Awareness + Live Demo Mode:** Automatically detects the official bathing season (**June 1 – September 30** in `Europe/Madrid`). Outside summer, displays a minimalist seasonal countdown screen while offering a one-click **Live Telemetry Preview** for portfolio visitors and year-round sea monitoring.
-- 🗳️ **Time-Windowed Citizen Corroboration (SQLite):** Persists local flag reports per shift (`07:00–15:00` morning and `16:00–21:00` afternoon) in an embedded SQLite database without external DB overhead.
-- 🌍 **Bilingual & Theme-Adaptive UI:** Full support for **Spanish (ES)** and **Valencian (VA)** with light/dark mode.
+Every 60 seconds (via Next.js ISR), the server fetches two data sources:
+1. Open-Meteo Marine API for wave height, wave period, and swell direction off El Perelló (`39.278, -0.278`).
+2. Inforatge El Perelló for local wind speed, wind gusts, wind direction, temperature, and UV index.
 
----
-
-## 🏗️ Architecture
+The flag estimation logic in `src/lib/beach-logic.js` accounts for the East-facing orientation of the beach (~75° to 90°) and applies a multiplier when long-period swell (`>= 6.0s`) hits the shore step. It also separates onshore winds (Levante and Gregal, which push waves and currents into the step) from milder afternoon thermal breezes (Garbí) and offshore winds (Poniente).
 
 ```text
 ┌────────────────────────────┐   ┌────────────────────────────┐
@@ -40,51 +25,48 @@ Following the coastal regeneration works on the beach, the shoreline developed a
 │ (Swell Height/Period/Dir)  │   │ (Wind, Gusts, Temp, UV)    │
 └─────────────┬──────────────┘   └─────────────┬──────────────┘
               └──────────────┬─────────────────┘
-                             ▼ (Next.js Server Component · ISR 60s)
+                             v (Next.js Server Component, ISR 60s)
               ┌──────────────────────────────┐
-              │     Physical Flag Model      │
+              │       Flag Estimation        │
               │    src/lib/beach-logic.js    │
               └──────────────┬───────────────┘
-                             ▼
+                             v
               ┌──────────────────────────────┐
-              │   DashboardClient (ES / VA)  │◄───► /api/votes (SQLite)
+              │   DashboardClient (ES / VA)  │ <---> /api/votes (SQLite)
               └──────────────────────────────┘
 ```
 
----
+### Seasonal mode and beach voting
 
-## 🚀 Getting Started
+Lifeguard service in El Perelló runs from June 1 to September 30. Outside those months, the site shows an off-season screen with a countdown to June 1 and a button to inspect the live telemetry and theoretical flag anyway.
 
-### 1. Clone and install dependencies
+During summer, visitors can vote on the current flag during lifeguard hours (`07:00` to `15:00` and `16:00` to `21:00`, `Europe/Madrid` time). Votes are stored by shift in a local SQLite database (`/app/data/votes.sqlite`). The interface is available in Spanish and Valencian, with light and dark themes.
+
+## Local development
+
+Install dependencies and start the development server:
+
 ```bash
-git clone https://github.com/Ivan-olivera-dev/playaperello.git
-cd playaperello
 npm ci
-```
-
-### 2. Run the development server
-```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Run unit tests
+The app runs at `http://localhost:3000`.
+
+To run the unit tests for the seasonal rules and flag estimation logic:
+
 ```bash
 npm test
 ```
 
----
+## Deployment
 
-## 🐳 Docker & Self-Hosted Deployment (Coolify / VPS)
-
-The repository includes a multi-stage `Dockerfile` using Next.js `standalone` output and a `docker-compose.yml` with persistent volume mapping for SQLite (`/app/data`):
+The project builds as a standalone Next.js image via the included `Dockerfile` and `docker-compose.yml`, mounting `./data:/app/data` so the SQLite database persists across deploys:
 
 ```bash
 docker compose up -d --build
 ```
 
----
+## Author
 
-## 📝 License
-
-Created by [Iván Olivera González](https://ivanolivera.dev).
+[Iván Olivera González](https://ivanolivera.dev)
