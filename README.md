@@ -1,9 +1,27 @@
+<p align="center">
+  <img src="docs/brand/banner.png" alt="El Perelló: sea conditions and estimated beach flag" width="800">
+</p>
+
+<p align="center">
+  <a href="https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml"><img src="https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://playaperello.es"><img src="https://img.shields.io/badge/live-playaperello.es-0ea5e9.svg" alt="Live Site"></a>
+</p>
+
 # Playa del Perelló
 
-[![CI](https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml/badge.svg)](https://github.com/Ivan-olivera-dev/playaperello/actions/workflows/ci.yml)
-[![Live Site](https://img.shields.io/badge/live-playaperello.es-0ea5e9.svg)](https://playaperello.es)
+Web app that tracks sea conditions and estimates the beach safety flag for El Perelló (Sueca, Valencia). It combines marine swell data with readings from the local weather station, and lets people at the beach vote on the flag actually flying on the lifeguard post. Live at [playaperello.es](https://playaperello.es).
 
-Web app that tracks sea conditions and estimates the beach safety flag for El Perelló (Sueca, Valencia). Live at [playaperello.es](https://playaperello.es).
+<p align="center">
+  <img src="docs/brand/showcase.png" alt="Playa del Perelló on mobile: off-season screen in light and dark mode, and the live sea conditions view" width="900">
+</p>
+
+## Screenshots
+
+| Mobile, light | Mobile, dark | Live view | Desktop |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/mobile-light.png" alt="Off-season screen, light theme" width="180"> | <img src="docs/screenshots/mobile-dark.png" alt="Off-season screen, dark theme" width="180"> | <img src="docs/screenshots/mobile-live-light.png" alt="Live sea conditions with theoretical flag" width="180"> | <img src="docs/screenshots/desktop-light.png" alt="Desktop layout" width="320"> |
+
+<sub>Captures of the live site at playaperello.es, taken in November 2026 (off-season, so the live view shows the theoretical flag and voting is closed).</sub>
 
 ## Why I built it
 
@@ -41,6 +59,20 @@ The flag estimation logic in `src/lib/beach-logic.js` accounts for the East-faci
 Lifeguard service in El Perelló runs from June 1 to September 30. Outside those months, the site shows an off-season screen with a countdown to June 1 and a button to inspect the live telemetry and theoretical flag anyway.
 
 During summer, visitors can vote on the current flag during lifeguard hours (`07:00` to `15:00` and `16:00` to `21:00`, `Europe/Madrid` time). Votes are stored by shift in a local SQLite database (`/app/data/votes.sqlite`). The interface is available in Spanish and Valencian, with light and dark themes.
+
+## Data sources
+
+- [Open-Meteo Marine API](https://open-meteo.com/en/docs/marine-weather-api): wave height, period and direction.
+- [Inforatge El Perelló](https://inforatge.com/meteo-elperello): local wind, gusts, temperature and UV index.
+
+## Tech stack
+
+- Next.js 16 (App Router, Server Components, ISR)
+- React 19
+- SQLite via `sqlite3` for beach votes
+- `node:test` for the seasonal rules and flag estimation tests
+- Docker, deployed with Coolify
+- GitHub Actions for CI
 
 ## Local development
 
